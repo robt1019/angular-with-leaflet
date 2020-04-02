@@ -1,0 +1,44 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import * as L from 'leaflet';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class MarkerService {
+  capitals = '/assets/data/usa-capitals.geojson';
+
+  constructor(private http: HttpClient) {}
+
+  static ScaledRadius(val: number, maxVal: number): number {
+    return 20 * (val / maxVal);
+  }
+
+  makeCapitalMarkers(map: L.Map) {
+    this.http.get<any>(this.capitals).subscribe(res => {
+      for (const c of res.features) {
+        const lat = c.geometry.coordinates[0];
+        const lon = c.geometry.coordinates[1];
+        const marker = L.marker([lon, lat]).addTo(map);
+      }
+    });
+  }
+
+  makeCapitalCircleMarkers(map: L.Map) {
+    this.http.get<any>(this.capitals).subscribe(res => {
+      // Find the maximum population to scale the radii by.
+      const maxVal = Math.max(
+        ...res.features.map(x => x.properties.population),
+        0
+      );
+
+      for (const c of res.features) {
+        const lat = c.geometry.coordinates[0];
+        const lon = c.geometry.coordinates[1];
+        const circle = L.circleMarker([lon, lat], {
+          radius: MarkerService.ScaledRadius(c.properties.population, maxVal)
+        }).addTo(map);
+      }
+    });
+  }
+}
